@@ -1,0 +1,241 @@
+<!-- index.html -->
+<html>
+  <head>
+    <title>Spell Check POC</title>
+  </head>
+  <body>
+    <h1> Best Spell Checker POC </h1>
+
+    <!-- <input type="text" id="textInput" placeholder="Enter text" /> -->
+    <textarea id="textInput" placeholder="Enter text"></textarea>
+
+    
+    <button onclick="processAndSendData('simple_edit')">Simple Edit</button>
+    <button onclick="processAndSendData('optimized_edit')">Optimized Edit</button>
+    <button onclick="processAndSendData('norwig_edit')">Norwig Edit</button>
+    <button id="weightedEditButton" onclick="processAndSendData('weighted_edit')">Weighted Edit</button>
+    <label style="font-size:10px">Replace cost</label>
+    <input type="text" id="box1" placeholder="Box 1" style="width: 70px; height: 20px;">
+    <label style="font-size:10px">Delete cost cost</label>
+    <input type="text" id="box2" placeholder="Box 2" style = "width: 70px; height: 20px;">
+    <label style="font-size:10px">Insertion Cost cost</label>
+    <input type="text" id="box3" placeholder="Box 3" style = "width: 70px; height: 20px;">
+    <label style="font-size:10px">transpose cost</label>
+    <input type="text" id="box4" placeholder="Box 4" style = "width: 70px; height: 20px;">
+    <div id="responseContainer">
+      <table id="responseTable">
+        <thead>
+          <tr>
+            <th>From</th>
+            <th>To</th>
+            <th>Probability</th>
+            <th>Cost</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <p>-----------------------------------------------</p>
+    <div id="measurementContainer">
+      <p><b>Performance</b></p>
+    </div>
+
+    <button onclick="exportToExcel()">Export to Excel</button>
+
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script> <!-- Include xlsx library -->
+
+    <script>
+      
+      function processAndSendData(endpoint) {
+        
+        const textInput = document.getElementById('textInput').value;
+        const urlParams = new URLSearchParams(window.location.search);
+        if (endpoint === 'weighted_edit') {
+          const replace_cost = document.getElementById('box1').value;
+          const delete_cost= document.getElementById('box2').value;
+          const insert_cost = document.getElementById('box3').value;
+          const transpose_cost = document.getElementById('box4').value;
+          console.log(insert_cost);
+          request_dictionary = {
+            text: textInput, 
+            replace_cost: parseFloat(replace_cost),
+            insert_cost: parseFloat(insert_cost), 
+            delete_cost: parseFloat(delete_cost),
+            transpose_cost: parseFloat(transpose_cost)
+            }
+        }else {
+          request_dictionary = {text : textInput}
+        }
+        // Set the 'method' and 'sentence' parameters in the URL search
+        urlParams.set('method', endpoint);
+        urlParams.set('sentence', textInput);
+
+        // Update the URL with the modified search parameters
+        window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
+        console.log("thsi is working...")
+        const url = `http://127.0.0.1:8000/${endpoint}`; // Replace with your actual API URL
+
+        fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(request_dictionary),
+        })
+          .then(response => response.json())
+          .then(data => {
+            console.log('API response:', data);
+
+            // Clear existing table and measurement container
+            const tableBody = document.getElementById('tableBody');
+            const measurementContainer = document.getElementById('measurementContainer');
+            tableBody.innerHTML = '';
+            measurementContainer.innerHTML = '';
+
+            for (const item of data.response) {
+              if ('execution_time' in item) {
+                // Display the measurement data in a separate table
+                const measurementTable = document.createElement('table');
+                const measurementTableBody = document.createElement('tbody');
+
+                for (const [key, value] of Object.entries(item)) {
+                  const row = document.createElement('tr');
+                  const keyCell = document.createElement('td');
+                  const valueCell = document.createElement('td');
+
+                  keyCell.textContent = key;
+                  valueCell.textContent = value;
+                  row.appendChild(keyCell);
+                  row.appendChild(valueCell);
+                  measurementTableBody.appendChild(row);
+                }
+
+                measurementTable.appendChild(measurementTableBody);
+
+                // Add the measurement table to the measurement container
+                measurementContainer.appendChild(measurementTable);
+              } else {
+                // Add a row to the response table
+                const row = document.createElement('tr');
+                const fromCell = document.createElement('td');
+                const toCell = document.createElement('td');
+                const probabilityCell = document.createElement('td');
+                const costCell = document.createElement('td');
+
+                fromCell.textContent = item.from;
+                toCell.textContent = item.to;
+                probabilityCell.textContent = item.probability;
+                costCell.textContent = item.cost;
+
+                row.appendChild(fromCell);
+                row.appendChild(toCell);
+                row.appendChild(probabilityCell);
+                row.appendChild(costCell);
+
+                tableBody.appendChild(row);
+              }
+  // ...
+
+              // // Add a row to the response table
+              // const row = document.createElement('tr');
+              // const fromCell = document.createElement('td');
+              // const toCell = document.createElement('td');
+              // const probabilityCell = document.createElement('td');
+              // const costCell = document.createElement('td');
+
+              // fromCell.textContent = item.from;
+              // toCell.textContent = item.to;
+              // probabilityCell.textContent = item.probability;
+              // costCell.textContent = item.cost;
+
+              // row.appendChild(fromCell);
+              // row.appendChild(toCell);
+              // row.appendChild(probabilityCell);
+              // row.appendChild(costCell);
+
+              // tableBody.appendChild(row);
+            }
+            
+            if (data.measurement) {
+              // Display the measurement data in a separate div
+              const measurementContainer = document.getElementById('measurementContainer');
+              measurementContainer.innerHTML = '';
+
+              const measurementTable = document.createElement('table');
+              const measurementTableBody = document.createElement('tbody');
+
+              for (const [key, value] of Object.entries(data.measurement)) {
+                const row = document.createElement('tr');
+                const keyCell = document.createElement('td');
+                const valueCell = document.createElement('td');
+
+                keyCell.textContent = key;
+                valueCell.textContent = value;
+
+                row.appendChild(keyCell);
+                row.appendChild(valueCell);
+                measurementTableBody.appendChild(row);
+              }
+
+              measurementTable.appendChild(measurementTableBody);
+              measurementContainer.appendChild(measurementTable);
+            }
+          })
+          .catch(error => {
+            console.log('Error:', error); 
+          });
+      }
+
+      function exportToExcel() {
+        const table = document.getElementById('responseTable');
+        const wb = XLSX.utils.table_to_book(table, { sheet: 'Sheet 1' });
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+
+        function s2ab(s) {
+          const buf = new ArrayBuffer(s.length);
+          const view = new Uint8Array(buf);
+          for (let i = 0; i < s.length; i++) {
+            view[i] = s.charCodeAt(i) & 0xff;
+          }
+          return buf;
+        }
+
+        const filename = 'spell_check_results.xlsx';
+        const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
+
+        if (typeof navigator !== 'undefined' && navigator.msSaveBlob) {
+          // For IE browser
+          navigator.msSaveBlob(blob, filename);
+        } else {
+          // For other browsers
+          const link = document.createElement('a');
+          link.href = window.URL.createObjectURL(blob);
+          link.download = filename;
+          link.click();
+          setTimeout(() => {
+            window.URL.revokeObjectURL(link.href);
+          }, 200);
+        }
+      }
+      
+
+  function handleWeightedEdit() {
+    const textareaValue = document.getElementById('textarea').value;
+    const box1Value = document.getElementById('box1').value;
+    const box2Value = document.getElementById('box2').value;
+    const box3Value = document.getElementById('box3').value;
+
+    // Include the textarea value and box values in your API request
+    const requestData = {
+      textarea: textareaValue,
+      box1: box1Value,
+      box2: box2Value,
+      box3: box3Value
+    };
+
+    // Perform further actions with the request data (e.g., send to API)
+    console.log(requestData);
+  }
+    </script>
+  </body>
+</html>

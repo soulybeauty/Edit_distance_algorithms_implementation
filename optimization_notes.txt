@@ -1,0 +1,18 @@
+# kok ve sekilci 
+# uzunluga gore sort etmek ve edit distance > 6 loop qirma
+# adjacent wordleri concatenate eleyib check
+# probbability combine
+# edge caseleri codlamaq 
+
+Salam Salamm
+Kitab - Ktab
+Qonaq - Qonaaq
+Yemək - Yemk
+Qapı - Qapi
+Dost - Dostt
+Hava - Havva
+Xəstə - Xstə
+Qara - Qarrra
+Günəş - Güneşşş
+
+Salamm Ktab Qonaaq Yemk Qapi Dostt Havva  Qarrra Güneşşş
